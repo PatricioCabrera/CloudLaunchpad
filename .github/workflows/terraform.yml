@@ -1,0 +1,109 @@
+name: Terraform CI
+
+# Triggers on PRs targeting main — only when Terraform files change.
+# This avoids running the pipeline for doc changes or README edits.
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '**.tf'
+      - '**.tfvars'
+      - '.github/workflows/terraform.yml'
+
+# Permissions required for OIDC token exchange and PR commenting.
+# id-token: write  → allows the workflow to request a GitHub OIDC token
+# pull-requests: write → allows the job to post the plan as a PR comment
+permissions:
+  id-token: write
+  contents: read
+  pull-requests: write
+
+jobs:
+  terraform:
+    name: Lint and Plan
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Check out the code so the runner has your Terraform files
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # 2. Install the Terraform CLI on the runner
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "~> 1.11"
+
+      # 3. Exchange the GitHub OIDC token for temporary AWS credentials.
+      #    No static keys anywhere — the role ARN lives in GitHub Secrets.
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: us-east-1
+
+      # 4. Check formatting — fail fast if any .tf file isn't formatted.
+      #    --recursive catches files in subdirectories (modules/).
+      #    --check means "report but don't fix" — the runner never edits your code.
+      - name: Terraform Format Check
+        id: fmt
+        run: terraform fmt --check --recursive
+
+      # 5. Initialize — downloads providers, connects to the S3 backend.
+      #    The runner needs S3 read access for this (covered by the OIDC role).
+      - name: Terraform Init
+        id: init
+        run: terraform init
+
+      # 6. Validate — checks HCL syntax and internal consistency.
+      #    Does NOT call AWS APIs — purely static analysis.
+      - name: Terraform Validate
+        id: validate
+        run: terraform validate
+
+      # 7. Plan — calls AWS APIs and computes the diff against current state.
+      #    continue-on-error: true so we can still post the failure as a PR comment
+      #    instead of silently dropping the job.
+      - name: Terraform Plan
+        id: plan
+        run: terraform plan -no-color -out=tfplan
+        continue-on-error: true
+
+      # 8. Post the plan output as a comment on the PR.
+      #    GITHUB_TOKEN is automatically provided by GitHub — no manual secret needed.
+      - name: Comment plan on PR
+        uses: actions/github-script@v7
+        if: github.event_name == 'pull_request'
+        env:
+          PLAN: ${{ steps.plan.outputs.stdout }}
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const plan = process.env.PLAN || '(no plan output)';
+            const body = [
+              '### Terraform Plan',
+              '',
+              '| Check | Result |',
+              '|-------|--------|',
+              `| Format | \`${{ steps.fmt.outcome }}\` |`,
+              `| Validate | \`${{ steps.validate.outcome }}\` |`,
+              `| Plan | \`${{ steps.plan.outcome }}\` |`,
+              '',
+              '```hcl',
+              plan,
+              '```',
+              '',
+              `*Triggered by @${{ github.actor }} on \`${{ github.head_ref }}\`*`
+            ].join('\n');
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: body
+            });
+
+      # 9. If plan failed, fail the job here — blocks the PR merge.
+      #    We deferred the failure to step 7 so step 8 could still run.
+      - name: Plan status gate
+        if: steps.plan.outcome == 'failure'
+        run: exit 1

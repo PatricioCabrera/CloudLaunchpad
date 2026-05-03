@@ -1,3 +1,9 @@
+module "github_oidc" {
+  source      = "./modules/github-oidc"
+  github_org  = "PatricioCabrera"
+  github_repo = "CloudLaunchpad"
+}
+
 module "networking" {
   source = "./modules/networking"
   subnets = {
