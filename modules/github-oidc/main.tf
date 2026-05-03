@@ -48,10 +48,38 @@ resource "aws_iam_role" "github_actions" {
   })
 }
 
-# Attach ReadOnlyAccess for the plan-only role.
-# terraform plan reads state (S3) and describes resources (EC2, VPC, etc.) — no writes needed.
-# The apply role (Month 2) will need a custom policy with write permissions.
+# Attach ReadOnlyAccess for describing AWS resources during terraform plan.
+# Covers EC2 Describe*, IAM Get*/List*, S3 GetObject — everything plan needs to read.
 resource "aws_iam_role_policy_attachment" "read_only" {
   role       = aws_iam_role.github_actions.name
   policy_arn = "arn:aws:iam::aws:policy/ReadOnlyAccess"
+}
+
+# Inline policy for S3 state lock management.
+# terraform plan acquires a lock (PutObject .tflock) and releases it (DeleteObject) even for read-only runs.
+# ReadOnlyAccess doesn't include PutObject — this targeted policy adds only what's needed.
+# Scoped to the exact state bucket — not all S3.
+resource "aws_iam_role_policy" "state_lock" {
+  name = "terraform-state-lock"
+  role = aws_iam_role.github_actions.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "s3:PutObject",    # acquire lock — write .tflock file
+          "s3:DeleteObject", # release lock — delete .tflock file
+          "s3:GetObject",    # read state file (belt-and-suspenders over ReadOnlyAccess)
+        ]
+        Resource = "arn:aws:s3:::tfstate-060451241527-us-east-1-an/*"
+      },
+      {
+        Effect   = "Allow"
+        Action   = "s3:ListBucket"
+        Resource = "arn:aws:s3:::tfstate-060451241527-us-east-1-an"
+      }
+    ]
+  })
 }
