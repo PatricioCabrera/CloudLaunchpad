@@ -20,9 +20,9 @@ resource "aws_s3_bucket" "tfstate" {
 resource "aws_s3_bucket_public_access_block" "tfstate" {
   bucket = aws_s3_bucket.tfstate.id
 
-  block_public_acls = true
-  ignore_public_acls = true
-  block_public_policy = true
+  block_public_acls       = true
+  ignore_public_acls      = true
+  block_public_policy     = true
   restrict_public_buckets = true
 }
 
@@ -34,7 +34,7 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "tfstate" {
 
   rule {
     apply_server_side_encryption_by_default {
-      sse_algorithm = "AES256"  # SSE-S3, not SSE-KMS — no CMK required
+      sse_algorithm = "AES256" # SSE-S3, not SSE-KMS — no CMK required
     }
   }
 }
