@@ -1,0 +1,35 @@
+volumes:
+  database_storage:
+services:
+  db:
+      image: postgres:18.3
+      environment:
+        - POSTGRES_USER=${DB_USER}
+        - POSTGRES_PASSWORD=${DB_PASSWORD}
+        - POSTGRES_DB=cloudlaunchpad
+      volumes:
+        - database_storage:/var/lib/postgresql/18/docker
+      healthcheck:
+        test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d cloudlaunchpad"]  # postgres built-in: returns 0 when ready
+        interval: 5s       # check every 5s
+        timeout: 5s        # fail if no response in 5s
+        retries: 5         # mark unhealthy after 5 failures
+  redis:
+      image: redis:8.6
+      healthcheck:
+        test: ["CMD", "redis-cli", "PING"]
+        interval: 5s
+        timeout: 5s
+        retries: 5
+  app:
+      build: ./app
+      depends_on:
+        db:
+          condition: service_healthy   # waits for healthcheck to pass, not just container start
+        redis:
+          condition: service_healthy
+      ports:
+        - "8000:8000"
+      environment:
+        - DATABASE_URL=postgresql://${DB_USER}:${DB_PASSWORD}@db:5432/cloudlaunchpad
+        - REDIS_URL=redis://redis:6379
