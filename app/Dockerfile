@@ -11,5 +11,6 @@ RUN groupadd --system appgroup && useradd --system --gid appgroup --shell /bin/b
 COPY --from=builder /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
 COPY --from=builder /usr/local/bin/uvicorn /usr/local/bin/uvicorn
 COPY src/ .
+EXPOSE 8000
 USER appuser
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
