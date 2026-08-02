@@ -123,7 +123,7 @@ If a second environment ever becomes genuinely necessary, it will be directories
 
 ### EC2 before Fargate
 
-The first compute implementation is EC2 with `cfn-init` — deliberately, and it gets thrown away. Building the manual version first is what makes the argument for Fargate concrete rather than received: instance patching, user-data debugging, and the absence of rolling deploys are much more persuasive after you've dealt with them.
+The first compute implementation is a plain EC2 instance bootstrapped with cloud-init `user_data` — deliberately, and it gets thrown away. Building the manual version first is what makes the argument for Fargate concrete rather than received: instance patching, user-data debugging, and the absence of rolling deploys are much more persuasive after you've dealt with them.
 
 ### No automated database backups
 
@@ -171,12 +171,12 @@ Phases are ordered, not scheduled. Each produces an independently shippable repo
 | Local stack — app + PostgreSQL + Valkey, healthchecked | ✅ |
 | API — `GET /health` | ✅ |
 | API — `/visit`, `/visits`, `/notes`, `/notes/{id}`, `/metrics` | ⬜ stubbed |
-| EC2 + `cfn-init` · budget guardrails · resource tagging | ⬜ |
+| EC2 + cloud-init · budget guardrails · resource tagging | ⬜ |
 | ECS Fargate + ALB + ECR + secrets chain · VPC endpoints | ⬜ |
 | RDS PostgreSQL + ElastiCache Valkey, wired to the API | ⬜ |
 | React dashboard + S3 + CloudFront + WAF · CloudWatch dashboards and alarms | ⬜ |
 | Cognito user pool + ALB `authenticate-cognito` | ⬜ |
-| `launch.sh` · runbooks · ADRs | ⬜ |
+| `launch.sh` · runbooks · decision record complete | ⬜ |
 
 **Known gaps.** The root module still hardcodes values that belong in variables, the backend state key predates the modules it now holds, CI plans but does not apply, and there is no committed `.env.example` — so a clean clone won't run locally without knowing which variables to set. All are scheduled, and listed here rather than hidden.
 
