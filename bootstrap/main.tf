@@ -1,3 +1,17 @@
+# No backend block — bootstrap state is local by necessity. This module
+# creates the bucket that every other module stores its state in, so it
+# cannot store its own state there. `prevent_destroy` on the bucket is what
+# makes losing this local state survivable.
+terraform {
+  required_version = ">= 1.9"
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 6.0"
+    }
+  }
+}
+
 provider "aws" {
   region  = "us-east-1"
   profile = "default"
