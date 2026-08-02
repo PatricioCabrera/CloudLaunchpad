@@ -14,10 +14,10 @@ services:
         interval: 5s       # check every 5s
         timeout: 5s        # fail if no response in 5s
         retries: 5         # mark unhealthy after 5 failures
-  redis:
-      image: redis:8.6
+  valkey:
+      image: valkey/valkey:8   # matches ElastiCache Valkey — API-compatible with Redis
       healthcheck:
-        test: ["CMD", "redis-cli", "PING"]
+        test: ["CMD", "valkey-cli", "PING"]
         interval: 5s
         timeout: 5s
         retries: 5
@@ -26,10 +26,10 @@ services:
       depends_on:
         db:
           condition: service_healthy   # waits for healthcheck to pass, not just container start
-        redis:
+        valkey:
           condition: service_healthy
       ports:
         - "8000:8000"
       environment:
         - DATABASE_URL=postgresql://${DB_USER}:${DB_PASSWORD}@db:5432/cloudlaunchpad
-        - REDIS_URL=redis://redis:6379
+        - REDIS_URL=redis://valkey:6379   # redis:// scheme — Valkey is wire-compatible

@@ -20,3 +20,6 @@ override.tf.json
 
 # Environment variables
 *.env
+
+# Co-pilot instructions — contains personal context, never publish
+CLAUDE.md
