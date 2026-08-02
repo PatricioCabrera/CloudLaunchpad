@@ -2,7 +2,6 @@
 *.tfstate
 *.tfstate.backup
 .terraform/
-.terraform.lock.hcl
 
 # Secrets — never commit these
 *.tfvars
