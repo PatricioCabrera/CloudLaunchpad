@@ -178,7 +178,7 @@ Phases are ordered, not scheduled. Each produces an independently shippable repo
 | Cognito user pool + ALB `authenticate-cognito` | ⬜ |
 | `launch.sh` · runbooks · decision record complete | ⬜ |
 
-**Known gaps.** The root module still hardcodes values that belong in variables, the backend state key predates the modules it now holds, CI plans but does not apply, and there is no committed `.env.example` — so a clean clone won't run locally without knowing which variables to set. All are scheduled, and listed here rather than hidden.
+**Known gaps.** The root module still hardcodes values that belong in variables, CI plans but does not apply, and `bootstrap/` is outside CI's scope — it is run manually and validated by hand. All are scheduled, and listed here rather than hidden.
 
 ### Phase 2 — EKS Edition *(planned)*
 
