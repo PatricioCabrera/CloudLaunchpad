@@ -65,7 +65,7 @@ Outbound traffic uses VPC gateway endpoints rather than a NAT Gateway — see [D
 
 ## Design decisions
 
-The parts worth defending. Each is recorded as an ADR in [`decisions/`](decisions/).
+The parts worth defending, and the alternatives they were chosen over.
 
 ### Cost is a design constraint, not an afterthought
 
@@ -211,7 +211,6 @@ Requires `DB_USER` and `DB_PASSWORD` in a `.env` file. The API is then on `http:
 │   ├── networking/     # VPC, subnets, routing, flow logs
 │   └── github-oidc/    # OIDC provider + CI/CD role
 ├── app/                # FastAPI service + multi-stage Dockerfile
-├── decisions/          # ADRs
 ├── .github/workflows/  # CI
 └── docker-compose.yml  # local stack
 ```
