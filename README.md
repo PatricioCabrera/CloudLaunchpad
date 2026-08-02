@@ -37,12 +37,12 @@ The FastAPI application is deliberately small. It is the vehicle for the infrast
 CloudFront + WAF
     └── S3 static site (React dashboard)
             └── Application Load Balancer  ──authenticate-cognito──> Cognito user pool
-                    └── ECS Fargate (FastAPI)
+                    └── ECS Fargate (FastAPI)   (public subnet; inbound from ALB only)
                             ├── RDS PostgreSQL    (private subnet)
                             └── ElastiCache Valkey (private subnet)
 ```
 
-Outbound traffic uses VPC gateway endpoints rather than a NAT Gateway — see [Design decisions](#design-decisions).
+Tasks sit in public subnets and reach AWS APIs through the Internet Gateway — no NAT Gateway, no interface endpoints. See [Design decisions](#design-decisions).
 
 ### Stack
 
@@ -73,11 +73,23 @@ This project runs under a **$10/month ceiling**. That number changed the archite
 
 Left running continuously the stack costs roughly $85-90/month. Applied only while being worked on, it costs about $8. So everything is billed per hour or per request, and everything is destroyed at the end of every session. The permanent footprint — the Terraform state bucket, the container registry, and log groups — stays under $1/month.
 
-### No NAT Gateway
+### No NAT Gateway — and no interface endpoints either
 
-A NAT Gateway costs ~$32/month — a third of the entire budget — to solve a problem this workload barely has. Instead, S3 and ECR traffic goes through **VPC gateway endpoints**, which are free, with interface endpoints added only where something genuinely needs them.
+Egress is where a small AWS environment quietly becomes expensive. Three ways to let a Fargate task reach ECR, CloudWatch Logs, SSM, and Secrets Manager:
 
-Endpoint traffic never leaves the AWS network, which is both cheaper and more defensible than routing it out through a managed NAT.
+| Option | Cost |
+|--------|------|
+| NAT Gateway | ~$32/month, plus $0.045/GB |
+| Interface endpoints — `ecr.api`, `ecr.dkr`, `logs`, `ssm`, `secretsmanager`, `monitoring` | $0.01/hour per endpoint **per AZ** — roughly **$87/month** across two AZs |
+| Tasks in public subnets, egress via the Internet Gateway | **$0** |
+
+Interface endpoints are the trap. They read as the private, cloud-native, obviously-correct answer, and at six services across two availability zones they cost nearly **triple** the NAT Gateway they were meant to replace. Only *gateway* endpoints are free, and those exist for exactly two services: S3 and DynamoDB.
+
+So tasks run in public subnets with `assign_public_ip = true` and reach AWS APIs through the Internet Gateway, which carries no hourly charge. The S3 gateway endpoint stays, because it costs nothing and keeps ECR layer pulls off the public path.
+
+**The tradeoff, stated plainly.** A subnet is "public" because its route table reaches the Internet Gateway — not because the workload is exposed. Inbound is restricted to the ALB's security group, so nothing on the internet can open a connection to a task. But this is *one* control where a private subnet gives two: a mistakenly permissive security group exposes the task immediately, whereas in a private subnet it still would not be routable. That is a real reduction in defence in depth, accepted because this environment holds no user data and is destroyed after every session. It would be the wrong call for a system with real users.
+
+RDS and ElastiCache are unaffected — they need no egress and stay in private subnets, reached from inside the VPC.
 
 ### Secrets Manager for one secret, SSM for everything else
 
@@ -172,7 +184,7 @@ Phases are ordered, not scheduled. Each produces an independently shippable repo
 | API — `GET /health` | ✅ |
 | API — `/visit`, `/visits`, `/notes`, `/notes/{id}`, `/metrics` | ⬜ stubbed |
 | EC2 + cloud-init · budget guardrails · resource tagging | ⬜ |
-| ECS Fargate + ALB + ECR + secrets chain · VPC endpoints | ⬜ |
+| ECS Fargate + ALB + ECR + secrets chain · S3 gateway endpoint | ⬜ |
 | RDS PostgreSQL + ElastiCache Valkey, wired to the API | ⬜ |
 | React dashboard + S3 + CloudFront + WAF · CloudWatch dashboards and alarms | ⬜ |
 | Cognito user pool + ALB `authenticate-cognito` | ⬜ |
