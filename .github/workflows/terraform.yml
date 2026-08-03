@@ -1,9 +1,16 @@
 name: Terraform CI
 
-# Triggers on PRs targeting main — only when Terraform files change.
-# This avoids running the pipeline for doc changes or README edits.
+# Triggers on PRs targeting main (plan) and on merges to main (apply) —
+# only when Terraform files change. This avoids running the pipeline for
+# doc changes or README edits.
 on:
   pull_request:
+    branches: [main]
+    paths:
+      - '**.tf'
+      - '**.tfvars'
+      - '.github/workflows/terraform.yml'
+  push:
     branches: [main]
     paths:
       - '**.tf'
@@ -34,10 +41,35 @@ jobs:
           severity: HIGH,CRITICAL # only block on HIGH and CRITICAL
           # LOW and MEDIUM are reported but don't block the PR
 
+  bootstrap:
+    name: Validate bootstrap
+    runs-on: ubuntu-latest
+    needs: trivy
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "~> 1.11"
+
+      # bootstrap/ has no backend — its state is local by necessity (it
+      # creates the bucket everything else stores state in). init here
+      # only downloads providers; validate never calls AWS APIs, so no
+      # credentials are needed for this job.
+      - name: Terraform Init
+        working-directory: bootstrap
+        run: terraform init
+
+      - name: Terraform Validate
+        working-directory: bootstrap
+        run: terraform validate
+
   terraform:
     name: Lint and Plan
     runs-on: ubuntu-latest
     needs: trivy
+    if: github.event_name == 'pull_request'
 
     steps:
       # 1. Check out the code so the runner has your Terraform files
@@ -123,3 +155,33 @@ jobs:
       - name: Plan status gate
         if: steps.plan.outcome == 'failure'
         run: exit 1
+
+  apply:
+    name: Apply
+    runs-on: ubuntu-latest
+    needs: trivy
+    # Runs only once code lands on main — a PR must already have been
+    # reviewed and merged to get here. No separate approval gate: branch
+    # protection on main is what stands between a plan and an apply.
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "~> 1.11"
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: us-east-1
+
+      - name: Terraform Init
+        run: terraform init
+
+      - name: Terraform Apply
+        run: terraform apply -auto-approve -input=false

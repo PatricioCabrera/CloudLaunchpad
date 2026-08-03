@@ -1,0 +1,17 @@
+# Copy to terraform.tfvars and adjust for your fork.
+# terraform.tfvars is gitignored — it's the mechanism for local overrides,
+# not because these values are secret.
+
+aws_region  = "us-east-1"
+github_org  = "PatricioCabrera"
+github_repo = "CloudLaunchpad"
+
+# vpc_cidr and subnets default to the values below — override only if you
+# need a different addressing scheme.
+# vpc_cidr = "10.0.0.0/21"
+# subnets = {
+#   "public-a"  = { cidr = "10.0.0.0/27",  public = true }
+#   "public-b"  = { cidr = "10.0.0.32/27", public = true }
+#   "private-a" = { cidr = "10.0.1.0/24",  public = false }
+#   "private-b" = { cidr = "10.0.2.0/24",  public = false }
+# }
