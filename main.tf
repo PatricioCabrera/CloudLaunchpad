@@ -1,28 +1,11 @@
 module "github_oidc" {
   source      = "./modules/github-oidc"
-  github_org  = "PatricioCabrera"
-  github_repo = "CloudLaunchpad"
+  github_org  = var.github_org
+  github_repo = var.github_repo
 }
 
 module "networking" {
-  source = "./modules/networking"
-  subnets = {
-    "public-a" = {
-      cidr   = "10.0.0.0/27"
-      public = true
-    }
-    "public-b" = {
-      cidr   = "10.0.0.32/27"
-      public = true
-    }
-    "private-a" = {
-      cidr   = "10.0.1.0/24"
-      public = false
-    }
-    "private-b" = {
-      cidr   = "10.0.2.0/24"
-      public = false
-    }
-  }
-  vpc_cidr = "10.0.0.0/21"
+  source   = "./modules/networking"
+  subnets  = var.subnets
+  vpc_cidr = var.vpc_cidr
 }
