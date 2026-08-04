@@ -178,7 +178,7 @@ Phases are ordered, not scheduled. Each produces an independently shippable repo
 | Terraform state bootstrap — S3, encrypted, public access blocked | ✅ |
 | GitHub OIDC provider + CI/CD IAM role | ✅ |
 | Networking — VPC, 4 subnets across 2 AZs, routing, flow logs | ✅ |
-| CI — `trivy` → `fmt` → `validate` → `plan` → PR diff comment | ✅ |
+| CI — `trivy` → `fmt` → `validate` → `plan`/`apply` → PR diff comment | ✅ |
 | Container image — multi-stage, non-root, `python:3.12-slim` | ✅ |
 | Local stack — app + PostgreSQL + Valkey, healthchecked | ✅ |
 | API — `GET /health` | ✅ |
@@ -190,7 +190,7 @@ Phases are ordered, not scheduled. Each produces an independently shippable repo
 | Cognito user pool + ALB `authenticate-cognito` | ⬜ |
 | `launch.sh` · runbooks · decision record complete | ⬜ |
 
-**Known gaps.** The root module still hardcodes values that belong in variables, CI plans but does not apply, and `bootstrap/` is outside CI's scope — it is run manually and validated by hand. All are scheduled, and listed here rather than hidden.
+**Known gaps.** None outstanding right now — the previous three (root module hardcoding, CI plan-only, `bootstrap/` unvalidated in CI) are closed. `bootstrap/` still applies by hand, by necessity: it creates the state bucket everything else stores state in, so it can never depend on that same backend. CI validates it (`fmt`, `validate`) on every change; only the apply step stays manual.
 
 ### Phase 2 — EKS Edition *(planned)*
 
