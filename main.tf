@@ -9,3 +9,8 @@ module "networking" {
   subnets  = var.subnets
   vpc_cidr = var.vpc_cidr
 }
+
+module "ec2" {
+  count  = var.enable_ec2 ? 1 : 0
+  source = "./modules/ec2"
+}

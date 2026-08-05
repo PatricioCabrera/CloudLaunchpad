@@ -22,6 +22,12 @@ variable "vpc_cidr" {
   default     = "10.0.0.0/21"
 }
 
+variable "enable_ec2" {
+  description = "Toggle the standalone EC2 instance (Block 2 — deliberately replaced by ECS Fargate in Block 3). Defaults off: CI applies on merge to main, and an instance nobody opted into survives the session."
+  type        = bool
+  default     = false
+}
+
 variable "subnets" {
   description = "Subnets to create: CIDR block and public/private per subnet"
   type = map(object({
