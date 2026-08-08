@@ -32,3 +32,18 @@ variable "instance_type" {
   type        = string
   default     = "t4g.micro"
 }
+
+# Cloned anonymously over HTTPS: the instance holds no GitHub credential, so
+# this only works while the repo is public. A private repo would need a deploy
+# key or a PAT out of Secrets Manager — which is a Block 3 problem.
+variable "app_repo_url" {
+  description = "HTTPS clone URL of the application repository"
+  type        = string
+  default     = "https://github.com/PatricioCabrera/CloudLaunchpad.git"
+}
+
+variable "app_repo_branch" {
+  description = "Branch cloud-init clones — the app must already be merged here, not sitting on a feature branch"
+  type        = string
+  default     = "main"
+}

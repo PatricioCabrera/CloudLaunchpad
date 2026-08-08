@@ -61,7 +61,11 @@ resource "aws_instance" "app" {
   # user_data runs once, on first boot. Editing the file changes nothing on a
   # running instance — this flag makes Terraform replace the instance instead
   # of updating an attribute nothing will ever read again.
-  user_data                   = file("${path.module}/cloud-init/app.yaml")
+  user_data = templatefile("${path.module}/cloud-init/app.yaml.tftpl", {
+    app_port        = var.app_port
+    app_repo_url    = var.app_repo_url
+    app_repo_branch = var.app_repo_branch
+  })
   user_data_replace_on_change = true
 
   # IMDSv2 only. v1 answers any process that can reach 169.254.169.254 with no
