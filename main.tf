@@ -24,5 +24,6 @@ module "ec2" {
   source = "./modules/ec2"
 
   vpc_id       = module.networking.vpc_id
+  subnet_id    = module.networking.subnet_ids["public-a"]
   allowed_cidr = "${chomp(data.http.my_ip[0].response_body)}/32"
 }

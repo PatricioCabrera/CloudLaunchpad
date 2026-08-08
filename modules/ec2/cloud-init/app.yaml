@@ -1,0 +1,11 @@
+#cloud-config
+# Step 1 — prove the instance boots, cloud-init runs, and the instance profile
+# opens a Session Manager shell. The repo clone and the uvicorn systemd unit
+# land next, as write_files + runcmd.
+#
+# Debug from inside the instance: /var/log/cloud-init-output.log
+package_update: true
+packages:
+  - git
+  - python3.11
+  - python3.11-pip
