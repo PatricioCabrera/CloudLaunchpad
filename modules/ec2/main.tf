@@ -1,10 +1,9 @@
 # Block 2 scaffold — pending:
-#   - key pair
 #   - aws_instance with #cloud-config user_data (uvicorn systemd unit)
 #   - user_data_replace_on_change = true
 
 resource "aws_security_group" "app" {
-  name        = "cloudlaunchpad-app"
+  name        = "cloudlaunchpad-app-sg"
   description = "App instance: inbound on the app port from the operator IP only"
   vpc_id      = var.vpc_id
 
