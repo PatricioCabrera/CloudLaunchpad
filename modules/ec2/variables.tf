@@ -9,7 +9,7 @@ variable "allowed_cidr" {
 
   validation {
     condition     = can(cidrnetmask(var.allowed_cidr))
-    error_message = "allowed_cidr must be a valid IPv4 CIDR, e.g. 203.0.113.4/32."
+    error_message = "allowed_cidr must be a valid IPv4 CIDR, e.g. 203.0.113.4/32. An IPv6 address here means the IP-echo service answered over AAAA — use an IPv4-only endpoint."
   }
 }
 

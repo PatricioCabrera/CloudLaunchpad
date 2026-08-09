@@ -16,7 +16,13 @@ module "networking" {
 # public IP means nothing.
 data "http" "my_ip" {
   count = var.enable_ec2 ? 1 : 0
-  url   = "https://ifconfig.me/ip"
+
+  # IPv4-only on purpose. Dual-stack echo services answer over AAAA when the
+  # connection prefers IPv6 and report the v6 address, which is useless here:
+  # the VPC has no IPv6 CIDR, so the instance is reachable only over IPv4 and
+  # the source address AWS sees will be this v4 one. checkip.amazonaws.com
+  # publishes no AAAA record, so the answer is always the right family.
+  url = "https://checkip.amazonaws.com"
 }
 
 module "ec2" {
