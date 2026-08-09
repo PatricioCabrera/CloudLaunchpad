@@ -27,7 +27,7 @@ resource "aws_vpc_security_group_ingress_rule" "app" {
 #trivy:ignore:AVD-AWS-0104
 resource "aws_vpc_security_group_egress_rule" "app" {
   security_group_id = aws_security_group.app.id
-  description       = "All outbound — cloud-init needs GitHub and PyPI"
+  description       = "All outbound - cloud-init needs GitHub and PyPI"
 
   cidr_ipv4   = "0.0.0.0/0"
   ip_protocol = "-1"
