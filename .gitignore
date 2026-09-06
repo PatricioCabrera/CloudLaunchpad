@@ -22,3 +22,4 @@ override.tf.json
 
 # Co-pilot instructions — contains personal context, never publish
 CLAUDE.md
+AGENTS.md
