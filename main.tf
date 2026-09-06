@@ -10,6 +10,11 @@ module "networking" {
   vpc_cidr = var.vpc_cidr
 }
 
+module "budget" {
+  source             = "./modules/budget"
+  notification_email = var.notification_email
+}
+
 # Resolved at plan time, so the security group follows the operator's current
 # address. Lives at root rather than inside the module: a module that phones an
 # external service on every plan is not reusable from CI, where the runner's

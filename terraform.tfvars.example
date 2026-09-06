@@ -5,6 +5,7 @@
 aws_region  = "us-east-1"
 github_org  = "PatricioCabrera"
 github_repo = "CloudLaunchpad"
+notification_email = "an_example_email@mail.com"
 
 # Off by default so CI's apply-on-merge never leaves an instance running.
 # Set true locally to bring up the EC2 instance — and destroy it before you close.
