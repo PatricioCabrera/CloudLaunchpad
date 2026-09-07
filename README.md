@@ -137,6 +137,18 @@ If a second environment ever becomes genuinely necessary, it will be directories
 
 The first compute implementation is a plain EC2 instance bootstrapped with cloud-init `user_data` — deliberately, and it gets thrown away. Building the manual version first is what makes the argument for Fargate concrete rather than received: instance patching, user-data debugging, and the absence of rolling deploys are much more persuasive after you've dealt with them.
 
+### Threshold alerts and anomaly detection, not either alone
+
+A fixed $10 budget only tells you after the fact — an alert at 80% still means 80% is already spent, and a monthly-cadence threshold can't help if the spend spikes on the last day. AWS Cost Anomaly Detection catches the failure mode a threshold misses: it needs no number from you, it learns each service's normal spend and flags a deviation, so a resource left running by mistake shows up in a day instead of on next month's bill.
+
+They're not redundant. The budget answers "did total spend cross a line I set"; anomaly detection answers "does this look like nothing I've spent before." Running only one leaves a real gap the other closes for free.
+
+### SNS delivery needs a resource policy, not an IAM policy
+
+Both the budget and Cost Anomaly Detection publish to an SNS topic as AWS service principals (`budgets.amazonaws.com`, `costalerts.amazonaws.com`), not as an IAM role or user — so there's no identity to attach a policy to. The permission has to live on the topic itself, as a resource-based policy, the same pattern as an S3 bucket policy.
+
+Scoping it matters: the principal check alone proves the call came from the named AWS service, not that it came *for this account*. Without an `aws:SourceAccount` condition, any account's Budgets or Cost Anomaly Detection could target the topic — a confused-deputy hole closed by one extra condition block.
+
 ### No automated database backups
 
 Deliberate, and only defensible in this context: the environment is destroyed after every session and holds no data whose loss matters. In a real system this would be indefensible, which is exactly why it's written down rather than left as a silent gap.
