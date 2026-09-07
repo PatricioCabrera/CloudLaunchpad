@@ -67,15 +67,24 @@ resource "aws_budgets_budget" "cloudlaunchpad_budget" {
   }
 }
 
+# Imported, not created — this is the account's one default SERVICE-dimension
+# monitor (AWS caps dimensional monitors at one per account), not something
+# CloudLaunchpad owns. Destroying this module deletes it for the whole
+# account, not just this project — never destroy without first running
+# `terraform state rm` on this resource to release it back to unmanaged.
 resource "aws_ce_anomaly_monitor" "cloudlaunchpad_anomaly_monitor" {
   name              = "anomaly-monitor-cloudlaunchpad"
   monitor_type      = "DIMENSIONAL"
   monitor_dimension = "SERVICE"
 }
 
+# IMMEDIATE, not DAILY: Cost Anomaly Detection only allows SNS delivery on
+# IMMEDIATE frequency — DAILY/WEEKLY digests are Email-subscriber only. Keeping
+# SNS here trades a daily digest for one shared delivery pipeline with the
+# budget alerts above.
 resource "aws_ce_anomaly_subscription" "cloudlaunchpad_anomaly_subscription" {
-  name      = "daily_subscription_cloudlaunchpad"
-  frequency = "DAILY"
+  name      = "immediate_subscription_cloudlaunchpad"
+  frequency = "IMMEDIATE"
 
   monitor_arn_list = [aws_ce_anomaly_monitor.cloudlaunchpad_anomaly_monitor.arn]
 
