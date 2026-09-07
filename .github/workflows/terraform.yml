@@ -181,10 +181,12 @@ jobs:
     name: Apply
     runs-on: ubuntu-latest
     needs: [trivy, tflint]
-    # Runs only once code lands on main — a PR must already have been
-    # reviewed and merged to get here. No separate approval gate: branch
-    # protection on main is what stands between a plan and an apply.
+    # Runs once code lands on main, but a merge alone doesn't run this job —
+    # the "production" environment below requires a manual reviewer approval
+    # in the Actions UI first. That's deliberate: merging and applying are two
+    # different decisions, and sometimes only the first one is wanted.
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    environment: production
 
     steps:
       - name: Checkout
