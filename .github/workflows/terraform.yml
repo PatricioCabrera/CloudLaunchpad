@@ -41,6 +41,27 @@ jobs:
           severity: HIGH,CRITICAL # only block on HIGH and CRITICAL
           # LOW and MEDIUM are reported but don't block the PR
 
+  tflint:
+    name: TFLint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: terraform-linters/setup-tflint@v4
+        with:
+          tflint_version: v0.64.0
+
+      # Plugins (the aws ruleset) are declared in .tflint.hcl but not vendored —
+      # every run needs its own install, same as `terraform init` for providers.
+      - name: Init TFLint plugins
+        run: tflint --init
+
+      # --recursive lints every module directory against the one root config,
+      # not just the files in the current directory — a bare `tflint` run would
+      # silently skip everything under modules/.
+      - name: Run TFLint
+        run: tflint --recursive --config="$(pwd)/.tflint.hcl"
+
   bootstrap:
     name: Validate bootstrap
     runs-on: ubuntu-latest
@@ -68,7 +89,7 @@ jobs:
   terraform:
     name: Lint and Plan
     runs-on: ubuntu-latest
-    needs: trivy
+    needs: [trivy, tflint]
     if: github.event_name == 'pull_request'
 
     steps:
@@ -159,11 +180,13 @@ jobs:
   apply:
     name: Apply
     runs-on: ubuntu-latest
-    needs: trivy
-    # Runs only once code lands on main — a PR must already have been
-    # reviewed and merged to get here. No separate approval gate: branch
-    # protection on main is what stands between a plan and an apply.
+    needs: [trivy, tflint]
+    # Runs once code lands on main, but a merge alone doesn't run this job —
+    # the "production" environment below requires a manual reviewer approval
+    # in the Actions UI first. That's deliberate: merging and applying are two
+    # different decisions, and sometimes only the first one is wanted.
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    environment: production
 
     steps:
       - name: Checkout

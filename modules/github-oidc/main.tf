@@ -41,12 +41,13 @@ resource "aws_iam_role" "github_actions" {
           }
           StringLike = {
             # "sub" claim identifies the specific repo and context. Scoped to exactly
-            # the two events the workflow triggers on — a PR run (read-only plan) or
-            # a push to main (apply, since branch protection gates what reaches main).
+            # the two contexts that need AWS — a PR run (read-only plan) or the apply
+            # job. Apply references the "production" environment, which makes GitHub
+            # issue sub = environment:production instead of the branch ref.
             # No other branch or context can assume this role.
             "token.actions.githubusercontent.com:sub" = [
               "repo:${var.github_org}/${var.github_repo}:pull_request",
-              "repo:${var.github_org}/${var.github_repo}:ref:refs/heads/main",
+              "repo:${var.github_org}/${var.github_repo}:environment:production",
             ]
           }
         }
