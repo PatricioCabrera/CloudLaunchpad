@@ -6,7 +6,7 @@
 ./launch.sh --env production --app myapp --region us-east-1
 ```
 
-**Status:** Phase 1 of 3 in progress — networking, CI/CD, and the container image are live; compute and data layers are next. See [Project status](#project-status).
+**Status:** Phase 1 of 3 in progress — networking, CI/CD, the container image, an EC2 baseline, and budget guardrails are live; ECS Fargate and the data layer are next. See [Project status](#project-status).
 
 ---
 
@@ -190,12 +190,12 @@ Phases are ordered, not scheduled. Each produces an independently shippable repo
 | Terraform state bootstrap — S3, encrypted, public access blocked | ✅ |
 | GitHub OIDC provider + CI/CD IAM role | ✅ |
 | Networking — VPC, 4 subnets across 2 AZs, routing, flow logs | ✅ |
-| CI — `trivy` → `fmt` → `validate` → `plan`/`apply` → PR diff comment | ✅ |
+| CI — `trivy` + `tflint` → `fmt` → `validate` → `plan` → PR diff comment; `apply` behind an approval gate | ✅ |
 | Container image — multi-stage, non-root, `python:3.12-slim` | ✅ |
 | Local stack — app + PostgreSQL + Valkey, healthchecked | ✅ |
 | API — `GET /health` | ✅ |
 | API — `/visit`, `/visits`, `/notes`, `/notes/{id}`, `/metrics` | ⬜ stubbed |
-| EC2 + cloud-init · budget guardrails · resource tagging | ⬜ |
+| EC2 + cloud-init · budget guardrails · resource tagging | ✅ |
 | ECS Fargate + ALB + ECR + secrets chain · S3 gateway endpoint | ⬜ |
 | RDS PostgreSQL + ElastiCache Valkey, wired to the API | ⬜ |
 | React dashboard + S3 + CloudFront + WAF · CloudWatch dashboards and alarms | ⬜ |
