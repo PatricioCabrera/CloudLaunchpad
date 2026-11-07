@@ -19,6 +19,7 @@ variable "github_repo" {
 variable "notification_email" {
   description = "e-mail for budget notifications"
   type        = string
+  sensitive   = true
 }
 
 variable "vpc_cidr" {

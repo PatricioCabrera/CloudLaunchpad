@@ -135,8 +135,10 @@ jobs:
       #    instead of silently dropping the job.
       - name: Terraform Plan
         id: plan
-        run: terraform plan -no-color -out=tfplan
+        run: terraform plan -no-color -input=false -out=tfplan
         continue-on-error: true
+        env:
+          TF_VAR_notification_email: ${{ secrets.NOTIFICATION_EMAIL }}
 
       # 8. Post the plan output as a comment on the PR.
       #    GITHUB_TOKEN is automatically provided by GitHub — no manual secret needed.
@@ -208,3 +210,5 @@ jobs:
 
       - name: Terraform Apply
         run: terraform apply -auto-approve -input=false
+        env:
+          TF_VAR_notification_email: ${{ secrets.NOTIFICATION_EMAIL }}

@@ -20,6 +20,10 @@ data "aws_iam_policy_document" "allow_services" {
   }
 }
 
+# Accepted finding: messages carry only spend figures and SNS holds them just
+# until delivery. Encrypting needs a customer managed key (~$1/month, 10% of the
+# ceiling) with a key policy for both publishing services.
+#trivy:ignore:AWS-0095
 resource "aws_sns_topic" "budget_alerts" {
   name = "budget-alerts"
 }

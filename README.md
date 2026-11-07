@@ -149,6 +149,10 @@ Both the budget and Cost Anomaly Detection publish to an SNS topic as AWS servic
 
 Scoping it matters: the principal check alone proves the call came from the named AWS service, not that it came *for this account*. Without an `aws:SourceAccount` condition, any account's Budgets or Cost Anomaly Detection could target the topic — a confused-deputy hole closed by one extra condition block.
 
+### An unencrypted SNS topic, on purpose
+
+Trivy rates an unencrypted topic HIGH, and this one stays unencrypted with an inline suppression. SNS encryption protects messages at rest only until delivery, and these messages hold spend figures, not customer data. Encrypting them would take a customer managed KMS key at about $1/month, 10% of the budget, plus a key policy that could silently stop the alerts if it were wrong. With real user data in the payload, the answer flips.
+
 ### No automated database backups
 
 Deliberate, and only defensible in this context: the environment is destroyed after every session and holds no data whose loss matters. In a real system this would be indefensible, which is exactly why it's written down rather than left as a silent gap.
