@@ -3,4 +3,11 @@ provider "aws" {
   # No profile specified — uses the standard credential chain:
   # 1. Environment variables (CI: injected by OIDC action)
   # 2. ~/.aws/config named profile (local: your SSO session)
+
+  default_tags {
+    tags = {
+      Project   = "CloudLaunchpad"
+      ManagedBy = "Terraform"
+    }
+  }
 }

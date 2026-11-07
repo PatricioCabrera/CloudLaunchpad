@@ -1,0 +1,67 @@
+#cloud-config
+# Rendered by templatefile(). A dollar-brace sequence is a Terraform expression
+# here, not a shell variable — to pass one through to the instance, double the
+# dollar sign. This applies inside comments too: cloud-init's # means nothing to
+# the template engine, which parses the whole file before cloud-init ever sees it.
+#
+# This runs ONCE, on first boot. Editing this file changes nothing on a running
+# instance; user_data_replace_on_change = true in main.tf turns an edit into an
+# instance replacement, which is the only thing that re-runs it.
+#
+# When it fails, from a Session Manager shell:
+#   cloud-init status --long                 -> did it finish, and did it fail
+#   sudo cat /var/log/cloud-init-output.log  -> stdout+stderr of every stage
+#   sudo systemctl status cloudlaunchpad     -> did the unit itself start
+
+package_update: true
+packages:
+  - git
+  - python3.11
+  - python3.11-pip
+
+users:
+  # "default" keeps ec2-user. Omit it and cloud-init replaces the user list
+  # entirely, which removes the account SSM and half of AL2023 expect to exist.
+  - default
+  # uvicorn runs as this: system account, no home, no login shell. If the app is
+  # compromised, the attacker lands as a user that cannot log in anywhere.
+  - name: appuser
+    system: true
+    shell: /sbin/nologin
+
+write_files:
+  - path: /etc/systemd/system/cloudlaunchpad.service
+    permissions: '0644'
+    content: |
+      [Unit]
+      Description=CloudLaunchpad FastAPI application
+      # network-online, not network. The latter only waits for the stack to come
+      # up; the former waits for a routable address. uvicorn binds 0.0.0.0 and
+      # would fail on a boot that raced the DHCP lease.
+      After=network-online.target
+      Wants=network-online.target
+
+      [Service]
+      User=appuser
+      WorkingDirectory=/opt/cloudlaunchpad/app/src
+      # Absolute path into the venv — systemd has no PATH worth trusting and
+      # never sources a shell profile.
+      ExecStart=/opt/cloudlaunchpad/.venv/bin/uvicorn main:app --host 0.0.0.0 --port ${app_port}
+      Restart=always
+      RestartSec=5
+
+      [Install]
+      # The target a normal multi-user boot reaches. This line is what makes
+      # `systemctl enable` mean anything on the next boot.
+      WantedBy=multi-user.target
+
+runcmd:
+  # Each entry runs as root, in order, and a non-zero exit does not stop the
+  # ones after it — which is exactly why the log is the first place to look.
+  - git clone --depth 1 --branch ${app_repo_branch} ${app_repo_url} /opt/cloudlaunchpad
+  - python3.11 -m venv /opt/cloudlaunchpad/.venv
+  - /opt/cloudlaunchpad/.venv/bin/pip install --no-cache-dir -r /opt/cloudlaunchpad/app/requirements.txt
+  # After the install, so appuser owns the venv it has to execute.
+  - chown -R appuser:appuser /opt/cloudlaunchpad
+  - systemctl daemon-reload
+  - systemctl enable --now cloudlaunchpad.service
