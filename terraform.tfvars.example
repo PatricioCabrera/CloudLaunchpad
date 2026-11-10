@@ -10,12 +10,12 @@ github_repo = "CloudLaunchpad"
 # Set true locally to bring up the EC2 instance — and destroy it before you close.
 # enable_ec2 = true
 
-# vpc_cidr and subnets default to the values below — override only if you
-# need a different addressing scheme.
-# vpc_cidr = "10.0.0.0/21"
+# The VPC range comes from the platform, in SSM at
+# /platform/ip-allocations/cloudlaunchpad/cidr. Subnets are carved from it;
+# override only to change their sizes or positions.
 # subnets = {
-#   "public-a"  = { cidr = "10.0.0.0/27",  public = true }
-#   "public-b"  = { cidr = "10.0.0.32/27", public = true }
-#   "private-a" = { cidr = "10.0.1.0/24",  public = false }
-#   "private-b" = { cidr = "10.0.2.0/24",  public = false }
+#   "public-a"  = { newbits = 6, netnum = 0, public = true }
+#   "public-b"  = { newbits = 6, netnum = 1, public = true }
+#   "private-a" = { newbits = 3, netnum = 1, public = false }
+#   "private-b" = { newbits = 3, netnum = 2, public = false }
 # }

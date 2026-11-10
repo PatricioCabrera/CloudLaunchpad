@@ -157,6 +157,10 @@ Trivy rates an unencrypted topic HIGH, and this one stays unencrypted with an in
 
 The budget and Cost Anomaly Detection started in this repo and moved out once the account joined an AWS Organization. Both watch the whole account, not this project: the budget has no cost filter, and AWS allows a single service-level anomaly monitor per account. A project destroyed after every session shouldn't own the guardrail that catches what the destroy missed, and a second project in the account would depend on it too. The platform repository that manages the account owns them now. They were imported there and released here with a `removed` block, so nothing was recreated and no alert went dark.
 
+### The VPC range is assigned, not chosen
+
+The VPC's CIDR is read at plan time from an SSM parameter the platform repository publishes, not hardcoded here. The platform keeps the registry of every project's range and refuses overlaps, which is what makes VPC peering or a Transit Gateway possible later without renumbering anything. The subnets are carved from that range with `cidrsubnet()`, so a different assignment moves them with it. If the parameter is missing, the plan fails rather than guessing a range.
+
 ### No automated database backups
 
 Deliberate, and only defensible in this context: the environment is destroyed after every session and holds no data whose loss matters. In a real system this would be indefensible, which is exactly why it's written down rather than left as a silent gap.

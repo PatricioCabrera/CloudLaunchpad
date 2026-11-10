@@ -4,10 +4,32 @@ module "github_oidc" {
   github_repo = var.github_repo
 }
 
+# The platform repo assigns each project a range and publishes it here. Reading it
+# at plan time keeps two projects from ever building overlapping VPCs; if the
+# parameter is missing, the plan fails instead of guessing a range.
+data "aws_ssm_parameter" "vpc_cidr" {
+  name = "/platform/ip-allocations/cloudlaunchpad/cidr"
+}
+
+locals {
+  # insecure_value, not value: the provider marks value sensitive even for a plain
+  # String, which would hide the VPC range in every plan and PR comment.
+  vpc_cidr = data.aws_ssm_parameter.vpc_cidr.insecure_value
+
+  # Subnets are carved from whatever range the platform assigned, so a new range
+  # moves them with it instead of leaving them outside the VPC.
+  subnets = {
+    for name, s in var.subnets : name => {
+      cidr   = cidrsubnet(local.vpc_cidr, s.newbits, s.netnum)
+      public = s.public
+    }
+  }
+}
+
 module "networking" {
   source   = "./modules/networking"
-  subnets  = var.subnets
-  vpc_cidr = var.vpc_cidr
+  subnets  = local.subnets
+  vpc_cidr = local.vpc_cidr
 }
 
 # The budget, Cost Anomaly Detection and their SNS topic cover the whole account,
