@@ -153,6 +153,10 @@ Scoping it matters: the principal check alone proves the call came from the name
 
 Trivy rates an unencrypted topic HIGH, and this one stays unencrypted with an inline suppression. SNS encryption protects messages at rest only until delivery, and these messages hold spend figures, not customer data. Encrypting them would take a customer managed KMS key at about $1/month, 10% of the budget, plus a key policy that could silently stop the alerts if it were wrong. With real user data in the payload, the answer flips.
 
+### Account guardrails live outside the project
+
+The budget and Cost Anomaly Detection started in this repo and moved out once the account joined an AWS Organization. Both watch the whole account, not this project: the budget has no cost filter, and AWS allows a single service-level anomaly monitor per account. A project destroyed after every session shouldn't own the guardrail that catches what the destroy missed, and a second project in the account would depend on it too. The platform repository that manages the account owns them now. They were imported there and released here with a `removed` block, so nothing was recreated and no alert went dark.
+
 ### No automated database backups
 
 Deliberate, and only defensible in this context: the environment is destroyed after every session and holds no data whose loss matters. In a real system this would be indefensible, which is exactly why it's written down rather than left as a silent gap.
