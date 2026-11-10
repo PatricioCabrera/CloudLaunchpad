@@ -16,12 +16,6 @@ variable "github_repo" {
   default     = "CloudLaunchpad"
 }
 
-variable "vpc_cidr" {
-  description = "CIDR block for the VPC"
-  type        = string
-  default     = "10.0.0.0/21"
-}
-
 variable "enable_ec2" {
   description = "Toggle the standalone EC2 instance (Block 2 — deliberately replaced by ECS Fargate in Block 3). Defaults off: CI applies on merge to main, and an instance nobody opted into survives the session."
   type        = bool
@@ -29,27 +23,17 @@ variable "enable_ec2" {
 }
 
 variable "subnets" {
-  description = "Subnets to create: CIDR block and public/private per subnet"
+  description = "Subnets carved from the VPC range: newbits is added to its prefix length, netnum picks which block of that size, public decides the route"
   type = map(object({
-    cidr   = string
-    public = bool
+    newbits = number
+    netnum  = number
+    public  = bool
   }))
+  # In a /21: public /27s share the first /24; private /24s take the next two.
   default = {
-    "public-a" = {
-      cidr   = "10.0.0.0/27"
-      public = true
-    }
-    "public-b" = {
-      cidr   = "10.0.0.32/27"
-      public = true
-    }
-    "private-a" = {
-      cidr   = "10.0.1.0/24"
-      public = false
-    }
-    "private-b" = {
-      cidr   = "10.0.2.0/24"
-      public = false
-    }
+    "public-a"  = { newbits = 6, netnum = 0, public = true }
+    "public-b"  = { newbits = 6, netnum = 1, public = true }
+    "private-a" = { newbits = 3, netnum = 1, public = false }
+    "private-b" = { newbits = 3, netnum = 2, public = false }
   }
 }
