@@ -10,9 +10,15 @@ module "networking" {
   vpc_cidr = var.vpc_cidr
 }
 
-module "budget" {
-  source             = "./modules/budget"
-  notification_email = var.notification_email
+# The budget, Cost Anomaly Detection and their SNS topic cover the whole account,
+# so the platform repo owns them now. This drops them from state without deleting
+# them. Remove this block once main has applied it.
+removed {
+  from = module.budget
+
+  lifecycle {
+    destroy = false
+  }
 }
 
 # Resolved at plan time, so the security group follows the operator's current
